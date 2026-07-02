@@ -3854,6 +3854,7 @@ function movilConfirmarSalida(){
   movilRefrescar();
   closeModal('modalMovilSalida');
   toast(`📤 ${cant} uds. de ${p.codigo} → ${servicio}`);
+  setTimeout(()=>imprimirActaIdx(actas.length-1), 400);
 }
 
 async function doLogin(){
@@ -4059,6 +4060,7 @@ function qrRegistrarSalida(){
   document.getElementById('qrCantSalida').value = 1;
   document.getElementById('qrServicioSalida').value = '';
   toast(`📤 ${cant} uds. de ${p.codigo} despachadas a ${servicio}`);
+  if(_esCelular()) setTimeout(()=>imprimirActaIdx(actas.length-1), 400);
 }
 
 function imprimirEtiquetaUna(){
