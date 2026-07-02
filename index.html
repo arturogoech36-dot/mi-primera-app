@@ -4020,7 +4020,7 @@ function qrRegistrarEntrada(){
     'Bodega de Tránsito HAH', _usuarioActual?.nombre||'Arturo Gómez E.', [], cant);
 
   guardarDatos();
-  refreshAll();
+  if(_esCelular()) movilRefrescar(); else refreshAll();
   qrActualizarStock();
   document.getElementById('qrCantEntrada').value = 1;
   toast(`✅ +${cant} uds. ingresadas a ${p.codigo}`);
@@ -4054,7 +4054,7 @@ function qrRegistrarSalida(){
   actaCorrelativo++;
 
   guardarDatos();
-  refreshAll();
+  if(_esCelular()) movilRefrescar(); else refreshAll();
   qrActualizarStock();
   document.getElementById('qrCantSalida').value = 1;
   document.getElementById('qrServicioSalida').value = '';
