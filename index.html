@@ -2178,11 +2178,12 @@ function formatearOC(input){
 
 // ===== MAESTRO RENDER =====
 function renderMaestro(){
+  function _numCod(c){ const n=parseInt((c||'').split('-').pop()); return isNaN(n)?9999:n; }
   const q=document.getElementById('searchProd').value.toLowerCase();
   const ff=document.getElementById('filtFam').value;
   const filtered=productos.filter(p=>p.estado==='Activo'&&
     (p.codigo.toLowerCase().includes(q)||p.desc.toLowerCase().includes(q))&&
-    (!ff||p.familia===ff));
+    (!ff||p.familia===ff)).sort((a,b)=>_numCod(a.codigo)-_numCod(b.codigo));
   const tbody=document.getElementById('tablaMaestro');
   tbody.innerHTML=filtered.map(p=>`
     <div class="table-row" data-id="${p.id}" onclick="selectRow(this,${p.id})">
@@ -3150,10 +3151,11 @@ function importCSV(e){
 
 // ===== MAESTRO INVENTARIO RESUMEN =====
 function renderInventarioResumen(){
+  function _numCod(c){ const n=parseInt((c||'').split('-').pop()); return isNaN(n)?9999:n; }
   const q=(document.getElementById('searchInv')?.value||'').toLowerCase();
   const activos=productos.filter(p=>p.estado==='Activo'&&(
     p.codigo.toLowerCase().includes(q)||p.desc.toLowerCase().includes(q)
-  ));
+  )).sort((a,b)=>_numCod(a.codigo)-_numCod(b.codigo));
   const movMap={};
   actas.forEach(a=>{
     (a.items||[]).forEach(i=>{
