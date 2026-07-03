@@ -736,6 +736,7 @@ input,select{font-family:var(--font);outline:none}
     </div>
     <div style="display:flex;gap:8px;align-items:center;">
       <span id="movil_stockAlert" style="font-size:10px;background:#001a2a;border:1px solid var(--cyan);border-radius:20px;padding:3px 8px;color:var(--cyan);">⚠ 0</span>
+      <button onclick="openModal('modalAyuda')" style="background:var(--input);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;padding:5px 8px;cursor:pointer;">❓</button>
       <button onclick="cerrarSesion()" style="background:#1a0008;border:1px solid var(--red);border-radius:6px;color:var(--red);font-size:11px;padding:5px 8px;cursor:pointer;">🔒</button>
     </div>
   </div>
@@ -874,6 +875,9 @@ input,select{font-family:var(--font);outline:none}
     <span class="badge badge-cyan" id="badgeStock">⚠ Stock Alerts (0)</span>
     <span class="badge badge-red" id="badgeVenc">🕐 Vencimientos (0)</span>
     <span class="badge-user" id="badgeUsuario">Arturo Gómez E. ☰</span>
+    <button onclick="openModal('modalAyuda')" style="background:var(--input);border:1px solid var(--border);
+      border-radius:6px;color:var(--text);font-size:11px;padding:5px 10px;cursor:pointer;
+      white-space:nowrap;" title="Ayuda">❓ Ayuda</button>
     <button onclick="resetearSistema()" id="btnResetSistema" style="display:none;background:#330000;
       border:1px solid #ff0044;border-radius:6px;color:#ff0044;font-size:11px;padding:5px 10px;
       cursor:pointer;white-space:nowrap;" title="Resetear sistema (solo admin)">☢️ Reset</button>
@@ -1274,6 +1278,57 @@ input,select{font-family:var(--font);outline:none}
   <div class="modal-actions" style="margin-top:14px">
     <button class="btn btn-red" onclick="closeModal('modalDetalleActa')">Cerrar</button>
     <button class="btn btn-cyan" onclick="imprimirDetalleActa()">🖨️ Imprimir</button>
+  </div>
+</div>
+</div>
+
+<!-- MODAL AYUDA -->
+<div class="modal-overlay" id="modalAyuda">
+<div class="modal" style="width:640px;max-height:82vh;overflow-y:auto;">
+  <div class="modal-title">❓ Ayuda del Sistema — Bodega HAH</div>
+  <div style="font-size:13px;line-height:1.65;color:var(--text);">
+
+    <div style="background:var(--input);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:12px;">
+      <div style="color:var(--cyan);font-weight:700;margin-bottom:8px;">🔐 Ingresar al sistema</div>
+      <div>Entra con tu correo y contraseña. La sesión queda guardada: no necesitas loguearte de nuevo cada vez que abres la página, salvo que toques "🔒 Salir".</div>
+    </div>
+
+    <div style="background:var(--input);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:12px;">
+      <div style="color:var(--green);font-weight:700;margin-bottom:8px;">📷 Registrar entrada o salida</div>
+      <div style="margin-bottom:6px;"><b>Con QR:</b> toca "Escanear QR", apunta al código del producto, y aparecerán los botones de Entrada/Salida directo.</div>
+      <div><b>Manual:</b> usa los botones "▼ Entrada" / "▲ Salida" y busca el producto por código o nombre.</div>
+    </div>
+
+    <div style="background:var(--input);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:12px;">
+      <div style="color:var(--yellow);font-weight:700;margin-bottom:8px;">📋 Acta de despacho</div>
+      <div>Al registrar una salida, se genera un acta automáticamente. Puedes imprimirla al momento o después desde la pestaña <b>Actas</b> (celular: pestaña inferior "Actas"; PC: "Historial de Actas de Salida").</div>
+    </div>
+
+    <div style="background:var(--input);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:12px;">
+      <div style="color:var(--purple);font-weight:700;margin-bottom:8px;">🗂️ Historial (Kardex)</div>
+      <div>Todos los movimientos (entradas y salidas) quedan guardados y se pueden buscar por código o nombre de producto, en PC o celular.</div>
+    </div>
+
+    <div style="background:var(--input);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:12px;">
+      <div style="color:var(--red);font-weight:700;margin-bottom:8px;">⚠️ Alertas de stock</div>
+      <div>El número junto al ícono ⚠ indica cuántos productos están bajo su stock mínimo. Revísalo seguido para no quedarte sin insumos críticos.</div>
+    </div>
+
+    <div style="background:var(--input);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:12px;">
+      <div style="color:var(--cyan);font-weight:700;margin-bottom:8px;">📊 Reportes para jefatura</div>
+      <div>Existe un panel separado, de solo lectura, para que jefatura vea el inventario sin poder editarlo. Pide el link a quien administra el sistema.</div>
+    </div>
+
+    <div style="background:var(--input);border:1px solid var(--border);border-radius:8px;padding:12px 14px;">
+      <div style="color:var(--muted);font-weight:700;margin-bottom:8px;">🛠️ Problemas comunes</div>
+      <div style="margin-bottom:4px;">• <b>La cámara no lee el QR:</b> revisa que el sitio tenga permiso de cámara y que lo abras desde el navegador (no desde WhatsApp/Gmail).</div>
+      <div style="margin-bottom:4px;">• <b>No sincroniza:</b> revisa tu conexión a internet; los datos se guardan localmente y se sincronizan cuando vuelve la señal.</div>
+      <div>• <b>No imprime desde el celular:</b> usa el botón "Imprimir" dentro del acta (no se imprime solo, necesita tu toque directo).</div>
+    </div>
+
+  </div>
+  <div class="modal-actions" style="margin-top:14px">
+    <button class="btn btn-cyan" onclick="closeModal('modalAyuda')" style="width:100%;">Entendido</button>
   </div>
 </div>
 </div>
