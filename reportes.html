@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="theme-color" content="#003366">
+<title>Reportes Bodega HAH</title>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0B132B;--panel:#111e42;--panel2:#0d1635;
+  --border:#1e3560;--cyan:#00d4ff;--green:#00cc55;
+  --yellow:#ffaa00;--red:#ff4d6d;--purple:#aa55ff;
+  --text:#c8daf0;--muted:#4a6a88;--input:#0a1428;
+  --font:'Segoe UI',sans-serif;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font)}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:6px}
+
+/* Login */
+#loginScreen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg)}
+#loginBox{width:300px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:28px;text-align:center}
+#loginBox h1{font-size:18px;margin-bottom:4px;color:var(--cyan)}
+#loginBox p{font-size:12px;color:var(--muted);margin-bottom:18px}
+.field-input{background:var(--input);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px;font-size:14px;font-family:var(--font)}
+.btn{border:none;border-radius:8px;cursor:pointer;font-weight:600;font-family:var(--font)}
+.btn-cyan{background:var(--cyan);color:#001820}
+#loginError{color:var(--red);font-size:12px;margin-top:10px;display:none}
+
+/* App */
+#app{display:none;min-height:100vh;flex-direction:column}
+header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--panel);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
+header h1{font-size:16px;color:var(--cyan)}
+header .sub{font-size:11px;color:var(--muted)}
+#btnSalir{background:#1a0008;border:1px solid var(--red);color:var(--red);border-radius:6px;font-size:11px;padding:6px 10px}
+main{padding:16px;max-width:1100px;margin:0 auto;width:100%}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
+.kpi{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px}
+.kpi .val{font-size:22px;font-weight:700;color:var(--cyan)}
+.kpi .lbl{font-size:11px;color:var(--muted);margin-top:4px}
+
+section{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px}
+section h2{font-size:14px;color:var(--cyan);margin-bottom:10px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;color:var(--muted);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:6px 8px;border-bottom:1px solid var(--border);white-space:nowrap}
+tr:hover td{background:var(--panel2)}
+.tag{padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700}
+.tag-in{background:#00330d;color:var(--green)}
+.tag-out{background:#330008;color:var(--red)}
+.tag-bajo{background:#332400;color:var(--yellow)}
+#loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px}
+.tablewrap{overflow-x:auto}
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div id="loginBox">
+    <h1>📊 Reportes Bodega HAH</h1>
+    <p>Panel de solo lectura</p>
+    <input id="loginUser" class="field-input" type="email" placeholder="Correo" style="width:100%;margin-bottom:10px;text-align:center" autocomplete="off"/>
+    <input id="loginPass" class="field-input" type="password" placeholder="Contraseña" style="width:100%;margin-bottom:16px;text-align:center" onkeydown="if(event.key==='Enter') doLogin()"/>
+    <button id="btnLogin" onclick="doLogin()" class="btn btn-cyan" style="width:100%;padding:10px;font-size:14px">🔐 Ingresar</button>
+    <div id="loginError">⚠️ Correo o contraseña incorrectos</div>
+  </div>
+</div>
+
+<div id="app">
+  <header>
+    <div>
+      <h1>📊 Inventario Bodega HAH</h1>
+      <div class="sub" id="fechaActual"></div>
+    </div>
+    <button id="btnSalir" onclick="doLogout()">🔒 Salir</button>
+  </header>
+  <main>
+    <div class="kpis">
+      <div class="kpi"><div class="val" id="kpiTotalProd">—</div><div class="lbl">Productos activos</div></div>
+      <div class="kpi"><div class="val" id="kpiValorTotal">—</div><div class="lbl">Valor total inventario</div></div>
+      <div class="kpi"><div class="val" id="kpiStockBajo">—</div><div class="lbl">Productos con stock bajo</div></div>
+      <div class="kpi"><div class="val" id="kpiMovs">—</div><div class="lbl">Movimientos (30 días)</div></div>
+    </div>
+
+    <section>
+      <h2>⚠️ Productos con stock bajo mínimo</h2>
+      <div class="tablewrap"><table id="tblBajo">
+        <thead><tr><th>Código</th><th>Producto</th><th>Familia</th><th>Stock</th><th>Mínimo</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </section>
+
+    <section>
+      <h2>📦 Inventario por familia</h2>
+      <div class="tablewrap"><table id="tblFamilia">
+        <thead><tr><th>Familia</th><th>N° productos</th><th>Stock total</th><th>Valor</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </section>
+
+    <section>
+      <h2>🔄 Últimos movimientos</h2>
+      <div class="tablewrap"><table id="tblMovs">
+        <thead><tr><th>Fecha</th><th>Tipo</th><th>Código</th><th>Producto</th><th>Cantidad</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </section>
+
+    <section>
+      <h2>📋 Últimas actas de despacho</h2>
+      <div class="tablewrap"><table id="tblActas">
+        <thead><tr><th>N° Acta</th><th>Fecha</th><th>Destino/Servicio</th><th>Ítems</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </section>
+  </main>
+</div>
+
+<script>
+const _SB_URL = 'https://dycnykudkgcwslndwnny.supabase.co';
+const _SB_KEY = 'sb_publishable_6y-m4Csgi06fCCABR5A_Ag_cEEA1myF';
+let _sb = null;
+function getSB(){
+  if(!_sb && window.supabase) _sb = window.supabase.createClient(_SB_URL, _SB_KEY);
+  return _sb;
+}
+
+async function doLogin(){
+  const email = (document.getElementById('loginUser').value||'').trim().toLowerCase();
+  const pass  = (document.getElementById('loginPass').value||'').trim();
+  const errEl = document.getElementById('loginError');
+  const btn   = document.getElementById('btnLogin');
+  if(!email || !pass){ errEl.textContent='⚠️ Ingresa correo y contraseña'; errEl.style.display='block'; return; }
+  btn.disabled = true; btn.textContent = '⏳ Verificando...';
+  try{
+    const { data, error } = await getSB().auth.signInWithPassword({ email, password: pass });
+    if(error || !data?.user){
+      errEl.textContent = '⚠️ Correo o contraseña incorrectos';
+      errEl.style.display = 'block';
+      return;
+    }
+    mostrarApp();
+  }catch(e){
+    errEl.textContent = '⚠️ Error de conexión'; errEl.style.display='block';
+  }finally{
+    btn.disabled=false; btn.textContent='🔐 Ingresar';
+  }
+}
+
+async function doLogout(){
+  try{ await getSB().auth.signOut(); }catch(e){}
+  location.reload();
+}
+
+function mostrarApp(){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  document.getElementById('fechaActual').textContent =
+    new Date().toLocaleDateString('es-CL',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  cargarDatos();
+}
+
+function money(n){
+  return '$' + Math.round(n||0).toLocaleString('es-CL');
+}
+
+async function cargarDatos(){
+  const sb = getSB();
+  const [{data:productos}, {data:kardex}, {data:actas}] = await Promise.all([
+    sb.from('productos').select('*'),
+    sb.from('kardex').select('*').order('created_at',{ascending:false}).limit(30),
+    sb.from('actas').select('*').order('created_at',{ascending:false}).limit(10)
+  ]);
+  renderKPIs(productos||[], kardex||[]);
+  renderBajoStock(productos||[]);
+  renderFamilias(productos||[]);
+  renderMovs(kardex||[]);
+  renderActas(actas||[]);
+}
+
+function renderKPIs(productos, kardex){
+  const activos = productos.filter(p=>p.estado!=='inactivo');
+  const valorTotal = activos.reduce((s,p)=>s+(Number(p.costo_total)||0),0);
+  const bajos = activos.filter(p=>Number(p.stock)<=Number(p.stock_min||0));
+  document.getElementById('kpiTotalProd').textContent = activos.length;
+  document.getElementById('kpiValorTotal').textContent = money(valorTotal);
+  document.getElementById('kpiStockBajo').textContent = bajos.length;
+  document.getElementById('kpiMovs').textContent = kardex.length;
+}
+
+function renderBajoStock(productos){
+  const bajos = productos.filter(p=>p.estado!=='inactivo' && Number(p.stock)<=Number(p.stock_min||0));
+  const tb = document.querySelector('#tblBajo tbody');
+  tb.innerHTML = bajos.length ? bajos.map(p=>`
+    <tr><td>${p.codigo||'—'}</td><td>${p.descripcion||'—'}</td><td>${p.familia||'—'}</td>
+    <td><span class="tag tag-bajo">${p.stock??0}</span></td><td>${p.stock_min??0}</td></tr>
+  `).join('') : '<tr><td colspan="5" style="color:var(--muted)">Sin productos bajo mínimo 👍</td></tr>';
+}
+
+function renderFamilias(productos){
+  const activos = productos.filter(p=>p.estado!=='inactivo');
+  const map = {};
+  activos.forEach(p=>{
+    const f = p.familia || 'Sin familia';
+    if(!map[f]) map[f] = {n:0, stock:0, valor:0};
+    map[f].n++; map[f].stock += Number(p.stock)||0; map[f].valor += Number(p.costo_total)||0;
+  });
+  const tb = document.querySelector('#tblFamilia tbody');
+  tb.innerHTML = Object.entries(map).sort((a,b)=>b[1].valor-a[1].valor).map(([f,d])=>`
+    <tr><td>${f}</td><td>${d.n}</td><td>${d.stock}</td><td>${money(d.valor)}</td></tr>
+  `).join('') || '<tr><td colspan="4" style="color:var(--muted)">Sin datos</td></tr>';
+}
+
+function renderMovs(kardex){
+  const tb = document.querySelector('#tblMovs tbody');
+  tb.innerHTML = kardex.length ? kardex.map(m=>`
+    <tr><td>${m.fecha||'—'}</td>
+    <td><span class="tag ${m.tipo==='ENTRADA'?'tag-in':'tag-out'}">${m.tipo||'—'}</span></td>
+    <td>${m.codigo||'—'}</td><td>${m.producto||'—'}</td><td>${m.cantidad??'—'}</td></tr>
+  `).join('') : '<tr><td colspan="5" style="color:var(--muted)">Sin movimientos recientes</td></tr>';
+}
+
+function renderActas(actas){
+  const tb = document.querySelector('#tblActas tbody');
+  tb.innerHTML = actas.length ? actas.map(a=>`
+    <tr><td>${a.numero||a.correlativo||'—'}</td><td>${a.fecha||'—'}</td>
+    <td>${a.servicio||a.destino||'—'}</td><td>${(a.items?.length)??'—'}</td></tr>
+  `).join('') : '<tr><td colspan="4" style="color:var(--muted)">Sin actas registradas</td></tr>';
+}
+
+window.addEventListener('load', async ()=>{
+  try{
+    const { data } = await getSB().auth.getSession();
+    if(data?.session?.user){ mostrarApp(); return; }
+  }catch(e){}
+  document.getElementById('loginUser').focus();
+});
+</script>
+</body>
+</html>
