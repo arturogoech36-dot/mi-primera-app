@@ -740,6 +740,9 @@ input,select{font-family:var(--font);outline:none}
     </div>
   </div>
 
+  <!-- Contenido según pestaña -->
+  <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;">
+  <div id="movilPanelDashboard">
   <!-- Métricas rápidas -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px;">
     <div style="background:var(--panel);border-radius:10px;padding:12px;text-align:center;border:1px solid var(--border);">
@@ -775,6 +778,18 @@ input,select{font-family:var(--font);outline:none}
     <input id="movil_buscar" class="field-input" placeholder="🔍 Buscar producto por código..."
       style="width:100%;font-size:14px;padding:12px;" oninput="movilBuscar()"/>
     <div id="movil_resultados" style="margin-top:6px;max-height:200px;overflow-y:auto;"></div>
+  </div>
+  </div>
+
+  <div id="movilPanelKardex" style="display:none;padding:12px;">
+    <input id="movil_buscarKardex" class="field-input" placeholder="🔍 Buscar por código o producto..."
+      style="width:100%;font-size:14px;padding:12px;margin-bottom:10px;" oninput="renderMovilKardex()"/>
+    <div id="movil_listaKardex"></div>
+  </div>
+
+  <div id="movilPanelActas" style="display:none;padding:12px;">
+    <div id="movil_listaActas"></div>
+  </div>
   </div>
 
   <!-- Navegación inferior -->
@@ -2309,9 +2324,17 @@ function clonarById(id){
 function inactivarById(id){
   const p=productos.find(x=>x.id===id); if(!p) return;
   const hasHistory=actas.some(a=>a.items&&a.items.some(i=>i.codigo===p.codigo));
-  if(hasHistory){p.estado='Inactivo';toast(p.codigo+' inactivado (tiene historial de actas)');}
-  else{productos=productos.filter(x=>x.id!==id);toast(p.codigo+' eliminado');}
-  refreshAll();
+  confirmar({
+    icono:'⚠️', titulo: hasHistory ? 'Inactivar Producto' : 'Eliminar Producto',
+    mensaje:`¿Seguro que quieres ${hasHistory?'inactivar':'eliminar'} <b>${p.codigo}</b>?<br>${p.desc}<br><br>
+      <span style="color:var(--red);font-size:11px;">⚠️ Esta acción no se puede deshacer.</span>`,
+    textoOk: hasHistory?'Inactivar':'Eliminar', colorOk:'btn-red',
+    accion:()=>{
+      if(hasHistory){p.estado='Inactivo';toast(p.codigo+' inactivado (tiene historial de actas)');}
+      else{productos=productos.filter(x=>x.id!==id);toast(p.codigo+' eliminado');}
+      refreshAll();
+    }
+  });
 }
 
 // ===== FIJOS RENDER =====
@@ -3812,7 +3835,41 @@ function movilTab(tab){
   ['dashboard','kardex','actas'].forEach(t=>{
     const btn = document.getElementById('mtab_'+t);
     if(btn){ btn.style.color=t===tab?'var(--cyan)':'var(--muted)'; btn.style.borderTopColor=t===tab?'var(--cyan)':'transparent'; }
+    const panel = document.getElementById('movilPanel'+t.charAt(0).toUpperCase()+t.slice(1));
+    if(panel) panel.style.display = t===tab ? 'block' : 'none';
   });
+  if(tab==='kardex') renderMovilKardex();
+  if(tab==='actas') renderMovilActas();
+}
+
+function renderMovilKardex(){
+  const q = (document.getElementById('movil_buscarKardex')?.value||'').toLowerCase();
+  const cont = document.getElementById('movil_listaKardex');
+  const filtrados = kardex.filter(m=>!q || (m.codigo||'').toLowerCase().includes(q) || (m.producto||'').toLowerCase().includes(q)).slice(0,40);
+  cont.innerHTML = filtrados.length ? filtrados.map(m=>`
+    <div style="padding:10px 12px;background:var(--input);border-radius:8px;margin-bottom:6px;border:1px solid var(--border);">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;
+          background:${m.tipo==='ENTRADA'?'#00330d':'#330008'};color:${m.tipo==='ENTRADA'?'var(--green)':'var(--red)'};">${m.tipo}</span>
+        <span style="font-size:10px;color:var(--muted);">${m.fecha||'—'}</span>
+      </div>
+      <div style="margin-top:6px;color:var(--cyan);font-weight:700;font-size:13px;">${m.codigo||'—'}</div>
+      <div style="color:var(--text);font-size:12px;">${m.producto||'—'}</div>
+      <div style="color:var(--muted);font-size:11px;margin-top:2px;">Cantidad: ${m.cantidad??'—'}</div>
+    </div>`).join('') : '<div style="color:var(--muted);text-align:center;padding:20px;font-size:12px;">Sin movimientos</div>';
+}
+
+function renderMovilActas(){
+  const cont = document.getElementById('movil_listaActas');
+  cont.innerHTML = actas.length ? actas.slice(0,30).map((a,idx)=>`
+    <div onclick="verDetalleActa(${idx})" style="padding:10px 12px;background:var(--input);border-radius:8px;margin-bottom:6px;border:1px solid var(--border);cursor:pointer;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="color:var(--cyan);font-weight:700;font-size:13px;">${a.id||a.numero||'—'}</span>
+        <span style="font-size:10px;color:var(--muted);">${a.fecha||'—'}</span>
+      </div>
+      <div style="color:var(--text);font-size:12px;margin-top:4px;">${a.servicio||a.destino||'—'}</div>
+      <div style="color:var(--muted);font-size:11px;margin-top:2px;">${(a.items?.length)||0} ítem(s) · toca para ver / imprimir</div>
+    </div>`).join('') : '<div style="color:var(--muted);text-align:center;padding:20px;font-size:12px;">Sin actas registradas</div>';
 }
 
 function movilAbrirEntrada(){
